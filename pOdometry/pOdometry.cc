@@ -1,7 +1,7 @@
 /************************************************************/
 /*    NAME: Shuai Dong                                              */
 /*    ORGN: UA, Tuscallosa AL                               */
-/*    FILE: OdometrySubcriber.cpp                                        */
+/*    FILE: Odometry.cpp                                        */
 /*    DATE: May 5th, 2021                             */
 /************************************************************/
 
