@@ -11,7 +11,7 @@ Behavior = BHV_SimpleWaypoint
   condition = RETURN = false
   condition = DEPLOY = true
   
-  condition = (ODOMETRY_DIST1 < 0)
+  condition = (ODOMETRY_DIST1 < 50)
 
   endflag   = RETURN = true
 
