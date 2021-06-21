@@ -94,13 +94,13 @@ bool Odometry::Iterate()
   if(m_first_reading == 1)
   {
     m_total_distance =sqrt(m_current_x*m_current_x+m_current_y*m_current_y);
-    Notify( "ODOMETRY_DIST1",m_distanceDiff);
+    Notify( "ODOMETRY_DIST1",m_total_distance);
     m_first_reading=0;
   }
   else
   {
     m_total_distance =sqrt((m_current_x-m_previous_x)*(m_current_x-m_previous_x)+(m_current_y-m_previous_y)*(m_current_y-m_previous_y))+m_total_distance;
-    Notify( "ODOMETRY_DIST1",m_distanceDiff);
+    Notify( "ODOMETRY_DIST1",m_total_distance);
   }
 
   //AppCastingMOOSApp::PostReport();
