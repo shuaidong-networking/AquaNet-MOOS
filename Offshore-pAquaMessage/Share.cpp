@@ -58,6 +58,9 @@
 char log_file[BUFSIZE]; 
 char* log_file_name = log_file;
 
+//main
+#include "Share.h"
+
 #define DEFAULT_MULTICAST_GROUP_ADDRESS "224.1.1.11"
 #define DEFAULT_MULTICAST_GROUP_PORT 24460
 #define MAX_MULTICAST_CHANNELS 256
@@ -68,15 +71,26 @@ char* log_file_name = log_file;
 #define YELLOW MOOS::ConsoleColours::Yellow()
 #define NORMAL MOOS::ConsoleColours::reset()
 
-namespace MOOS {
 
 
 struct Socket {
-	MOOS::IPV4Address address;
+	MOOS::IPV4Address address1;
 	int socket_fd;
 	struct sockaddr_in sock_addr;
 	struct sockaddr_aquanet to_addr;
 };
+
+Socket new_socket;
+//UDP
+// MOOS::IPV4Address address;
+// int socket_fd;
+// struct sockaddr_in sock_addr;
+
+
+
+namespace MOOS {
+
+
 
 class Share::Impl: public CMOOSApp {
 public:
@@ -167,7 +181,7 @@ const std::string trim(const std::string& pString,
         // no content
         return "";
     }
-
+	
     const size_t endStr = pString.find_last_not_of(pWhitespace);
     const size_t range = endStr - beginStr + 1;
 
@@ -291,7 +305,6 @@ bool Share::Impl::OnStartUp()
 
 	SetIterateMode(REGULAR_ITERATE_AND_COMMS_DRIVEN_MAIL);
 	SetAppFreq(40,0);
-
 	try
 	{
 /*
@@ -364,7 +377,7 @@ bool Share::Impl::OnStartUp()
 bool Share::Impl::ProcessShortHandIOConfigurationString(std::string configuration_string, bool is_output)
 {
 
-//	std::cout<<"ProcessShortHandIOConfigurationString...\n";
+	std::cout<<"ProcessShortHandIOConfigurationString...\n";
 
 
 	std::string copy_config = configuration_string;
@@ -510,7 +523,7 @@ bool Share::Impl::ProcessShortHandIOConfigurationString(std::string configuratio
 
 bool Share::Impl::ProcessIOConfigurationString(std::string  configuration_string, bool is_output )
 {
-//	std::cout<<"ProcessShortHandIOConfigurationString...\n";
+	std::cout<<"ProcessLongHandIOConfigurationString...\n";
 
 
 	std::string src_name, dest_name, routes;
@@ -1079,6 +1092,98 @@ bool WildcardMatch(const std::string & var_pattern,
 // }
 
 
+
+// bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
+// {
+// 	//std::cout << "starting print the ApplyRoute" << std::endl;
+// 	//do we know how to route this? double check
+// 	RouteMap::iterator g = routing_table_.find(msg.GetKey());
+// 	if(g == routing_table_.end())
+// 		throw std::runtime_error("no specified route");
+
+// 	//we need to find the socket to send via
+// 	std::list<Route> & route_list = g->second;
+
+// 	double now = MOOS::Time();
+
+// 	std::list<Route>::iterator q;
+// 	for(q = route_list.begin();q!=route_list.end();q++)
+// 	{
+// 		//process every route
+// 		Route & route = *q;
+
+// 		if(route.frequency>0.0 && now-route.last_time_sent<(1.0/route.frequency))
+// 		    continue;
+
+// 		SocketMap::iterator mcg = socket_map_.find(route.dest_address);
+// 		if (mcg == socket_map_.end()) {
+// 			std::stringstream ss;
+// 			ss << "no output socket for "
+// 					<< route.dest_address.to_string() << std::endl;
+// 			//PrintSocketMap();
+// 			throw std::runtime_error(ss.str());
+// 		}
+		
+// 		//PrintSocketMap();
+// 		Socket & relevant_socket = mcg->second;
+
+
+//         if(verbose_)
+//         {
+//             std::cout<<std::setprecision(1);
+//             std::cout<<MOOS::ConsoleColours::green()<<std::setw(10)<<std::fixed<<(MOOS::Time()-CMOOSApp::GetAppStartTime())
+//             <<": "<<MOOS::ConsoleColours::reset();
+
+//             std::cout<<"sending \""<<msg.m_sKey<<"\" as \""<<route.dest_name<<"\" to "<<route.dest_address.to_string()<<"\n";
+//         }
+
+// 		//rename here...
+// 		msg.m_sKey = route.dest_name;
+
+// 		//serialise here
+// 		unsigned int msg_buffer_size = msg.GetSizeInBytesWhenSerialised();
+
+// 		if(msg_buffer_size>MAX_UDP_SIZE)
+// 		{
+// 			std::cerr<<"Message size exceeded payload size of "<<MAX_UDP_SIZE/1024<<" kB - not forwarding\n";
+// 			return false;
+// 		}
+
+// 		std::vector<unsigned char> buffer(msg_buffer_size);
+// 		if (!msg.Serialize(buffer.data(), msg_buffer_size))
+// 		{
+// 			throw std::runtime_error("failed msg serialisation");
+// 		}
+
+// 		/*
+// 			convert the passing data from vector buffer to string
+// 		*/
+// 		std::cout << "Starting sendto()" << std::endl;
+// 		std::string ss(buffer.begin(), buffer.end());
+// 		std::cout << ss << std::endl;
+
+// 		//send here
+// 		// if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
+// 		// 		(struct sockaddr*) (&relevant_socket.sock_addr),
+// 		// 		sizeof(relevant_socket.sock_addr)) < 0)
+// 		// {
+// 		// 	throw std::runtime_error("failed \"sendto\"");
+// 		// }
+// 		if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
+// 				(struct sockaddr*) (&relevant_socket.sock_addr),
+// 				sizeof(relevant_socket.sock_addr)) < 0)
+// 		{
+// 			throw std::runtime_error("failed \"sendto\"");
+// 		}
+
+		
+// 		route.last_time_sent = now;
+// 	}
+
+// 	return true;
+
+// }
+
 bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 {
 	//std::cout << "starting print the ApplyRoute" << std::endl;
@@ -1136,6 +1241,7 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 		}
 
 		std::vector<unsigned char> buffer(msg_buffer_size);
+	
 		if (!msg.Serialize(buffer.data(), msg_buffer_size))
 		{
 			throw std::runtime_error("failed msg serialisation");
@@ -1145,8 +1251,8 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 			convert the passing data from vector buffer to string
 		*/
 
-		std::string ss(buffer.begin(), buffer.end());
-		//std::cout << ss << std::endl;
+		// std::string ss(buffer.begin(), buffer.end());
+		// std::cout << ss << std::endl;
 
 		//send here
 		// if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
@@ -1155,13 +1261,13 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 		// {
 		// 	throw std::runtime_error("failed \"sendto\"");
 		// }
-		if (sendto(relevant_socket.socket_fd, ss.data(), ss.size(), 0,
-				(struct sockaddr*) (&relevant_socket.sock_addr),
-				sizeof(relevant_socket.sock_addr)) < 0)
-		{
-			throw std::runtime_error("failed \"sendto\"");
+		std::cout << "sendto()" << std::endl;
+		if (aqua_sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0, (struct sockaddr *) & relevant_socket.to_addr, sizeof (relevant_socket.to_addr)) < 0) {
+
+			printf("failed to send to the socket");
 		}
-		
+		//sleep(1);
+		// std::cout << buffer.size() << std::endl;
 		route.last_time_sent = now;
 	}
 
@@ -1170,84 +1276,7 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 }
 
 
-// bool Share::Impl::ApplyRoutes(CMOOSMsg & msg){
-	
-// 	//do we know how to route this? double check
-// 	RouteMap::iterator g = routing_table_.find(msg.GetKey());
-// 	PrintSocketMap();
-// 	if(g == routing_table_.end())
-// 		throw std::runtime_error("no specified route");
 
-// 	//we need to find the socket to send via
-// 	std::list<Route> & route_list = g->second;
-
-// 	double now = MOOS::Time();
-
-// 	std::list<Route>::iterator q;
-// 	for(q = route_list.begin();q!=route_list.end();q++)
-// 	{
-// 		//process every route
-// 		Route & route = *q;
-
-// 		if(route.frequency>0.0 && now-route.last_time_sent<(1.0/route.frequency))
-// 		    continue;
-
-// 		SocketMap::iterator mcg = socket_map_.find(route.dest_address);
-// 		if (mcg == socket_map_.end()) {
-// 			std::stringstream ss;
-// 			ss << "no output socket for "
-// 					<< route.dest_address.to_string() << std::endl;
-// 			PrintSocketMap();
-// 			throw std::runtime_error(ss.str());
-// 		}
-
-// 		Socket & relevant_socket = mcg->second;
-
-
-//         if(verbose_)
-//         {
-//             std::cout<<std::setprecision(1);
-//             std::cout<<MOOS::ConsoleColours::green()<<std::setw(10)<<std::fixed<<(MOOS::Time()-CMOOSApp::GetAppStartTime())
-//             <<": "<<MOOS::ConsoleColours::reset();
-
-//             std::cout<<"sending \""<<msg.m_sKey<<"\" as \""<<route.dest_name<<"\" to "<<route.dest_address.to_string()<<"\n";
-//         }
-
-// 		//rename here...
-// 		msg.m_sKey = route.dest_name;
-
-// 		//serialise here
-// 		unsigned int msg_buffer_size = msg.GetSizeInBytesWhenSerialised();
-
-// 		if(msg_buffer_size>MAX_UDP_SIZE)
-// 		{
-// 			std::cerr<<"Message size exceeded payload size of "<<MAX_UDP_SIZE/1024<<" kB - not forwarding\n";
-// 			return false;
-// 		}
-
-// 		std::vector<unsigned char> buffer(msg_buffer_size);
-// 		if (!msg.Serialize(buffer.data(), msg_buffer_size))
-// 		{
-// 			throw std::runtime_error("failed msg serialisation");
-// 		}
-
-// 		//send here internet internet socket String
-		
-// 		// sleep
-		
-// 		if (aqua_sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0, (struct sockaddr *) & relevant_socket.to_addr, sizeof (relevant_socket.to_addr)) < 0) {
-
-// 			printf("failed to send to the socket");
-// 		}
-// 		//sleep(100);
-// 		std::string ss(buffer.begin(), buffer.end());
-// 		std::cout << "sendto()" << std::endl;
-// 		std::cout << "the size of the data is: " << ss.size() << std::endl;
-// 		route.last_time_sent = now;
-// 	}
-	
-// 	return true;
-// }
 
 
 MOOS::IPV4Address Share::Impl::GetAddressFromChannelAlias(unsigned int channel_number) const
@@ -1271,92 +1300,92 @@ std::string Share::Impl::GetChannelAliasFromMutlicastAddress(const MOOS::IPV4Add
 	return ss.str();
 }
 
-bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast)
-{
+// bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast)
+// {
 
-	Socket new_socket;
-	new_socket.address=address;
+// 	//Socket new_socket;
+// 	new_socket.address1=address;
 
-	// create a internet socket
-	if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-	throw std::runtime_error(
-			"AddSocketForOutgoingTraffic() failed to open sender socket");
+// 	// create a internet socket
+// 	// if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+// 	// throw std::runtime_error(
+// 	// 		"AddSocketForOutgoingTraffic() failed to open sender socket");
 
-/*
-	int reuse = 1;
-	if (setsockopt(new_socket.socket_fd, SOL_SOCKET, SO_REUSEADDR,
-		&reuse, sizeof(reuse)) == -1)
-	throw std::runtime_error("failed to set resuse socket option");
-*/
+// /*
+// 	int reuse = 1;
+// 	if (setsockopt(new_socket.socket_fd, SOL_SOCKET, SO_REUSEADDR,
+// 		&reuse, sizeof(reuse)) == -1)
+// 	throw std::runtime_error("failed to set resuse socket option");
+// */
 
-/*
-	if (setsockopt(new_socket.socket_fd, SOL_SOCKET, SO_REUSEPORT,
-		&reuse, sizeof(reuse)) == -1)
-	throw std::runtime_error("failed to set resuse port option");
-*/
+// /*
+// 	if (setsockopt(new_socket.socket_fd, SOL_SOCKET, SO_REUSEPORT,
+// 		&reuse, sizeof(reuse)) == -1)
+// 	throw std::runtime_error("failed to set resuse port option");
+// */
 
-/*
-	int send_buffer_size = 4 * 64 * 1024;
-	if (setsockopt(new_socket.socket_fd,
-			SOL_SOCKET, SO_SNDBUF,
-			&send_buffer_size,
-			sizeof(send_buffer_size)) == -1)
-	{
-		throw std::runtime_error("failed to set size of socket send buffer");
-	}
-*/
+// /*
+// 	int send_buffer_size = 4 * 64 * 1024;
+// 	if (setsockopt(new_socket.socket_fd,
+// 			SOL_SOCKET, SO_SNDBUF,
+// 			&send_buffer_size,
+// 			sizeof(send_buffer_size)) == -1)
+// 	{
+// 		throw std::runtime_error("failed to set size of socket send buffer");
+// 	}
+// */
 
-/*
-	if(multicast)
-	{
-		char enable_loop_back = 1;
-		if (setsockopt(new_socket.socket_fd, IPPROTO_IP, IP_MULTICAST_LOOP,
-			&enable_loop_back, sizeof(enable_loop_back)) == -1)
-			throw std::runtime_error("failed to disable loop back");
+// /*
+// 	if(multicast)
+// 	{
+// 		char enable_loop_back = 1;
+// 		if (setsockopt(new_socket.socket_fd, IPPROTO_IP, IP_MULTICAST_LOOP,
+// 			&enable_loop_back, sizeof(enable_loop_back)) == -1)
+// 			throw std::runtime_error("failed to disable loop back");
 
-		char num_hops = 1;
-		if (setsockopt(new_socket.socket_fd, IPPROTO_IP, IP_MULTICAST_TTL,
-			&num_hops, sizeof(num_hops)) == -1)
-			throw std::runtime_error("failed to set ttl hops");
-	}
-*/
+// 		char num_hops = 1;
+// 		if (setsockopt(new_socket.socket_fd, IPPROTO_IP, IP_MULTICAST_TTL,
+// 			&num_hops, sizeof(num_hops)) == -1)
+// 			throw std::runtime_error("failed to set ttl hops");
+// 	}
+// */
 
-	memset(&new_socket.sock_addr, 0, sizeof (new_socket.sock_addr));
-	new_socket.sock_addr.sin_family = AF_INET;
+// 	memset(&new_socket.sock_addr, 0, sizeof (new_socket.sock_addr));
+// 	new_socket.sock_addr.sin_family = AF_INET;
 
-	std::string dotted_ip = MOOS::IPV4Address::GetNumericAddress(new_socket.address.host());
-	std::cout << "sent to dotted_op is :" << dotted_ip << std::endl;
-	if(inet_aton(dotted_ip.c_str(), &new_socket.sock_addr.sin_addr)==0)
-	{
-		throw std::runtime_error("failed to intepret "
-				+dotted_ip+" as an ip address");
-	}
-
-	//new_socket.sock_addr.sin_addr.s_addr = inet_addr(new_socket.address.ip_num.c_str());
-	new_socket.sock_addr.sin_port = htons(new_socket.address.port());
-
-	//finally add it to our collection of sockets
-	socket_map_[address] = new_socket;
-
-	return true;
-}
-
-
-// bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast){
-
-// 	Socket new_socket;
-// 	new_socket.address=address;
-// 	if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
-// 		printf("socket creation failed\n");
-// 		//exit(-1);
+// 	std::string dotted_ip = MOOS::IPV4Address::GetNumericAddress(new_socket.address1.host());
+// 	std::cout << "sent to dotted_op is :" << dotted_ip << std::endl;
+// 	if(inet_aton(dotted_ip.c_str(), &new_socket.sock_addr.sin_addr)==0)
+// 	{
+// 		throw std::runtime_error("failed to intepret "
+// 				+dotted_ip+" as an ip address");
 // 	}
 
-// 	new_socket.to_addr.sin_family = AF_AQUANET;
-// 	new_socket.to_addr.sin_addr.s_addr = 1;
-// 	new_socket.to_addr.sin_addr.d_addr = 2;
+// 	//new_socket.sock_addr.sin_addr.s_addr = inet_addr(new_socket.address.ip_num.c_str());
+// 	new_socket.sock_addr.sin_port = htons(new_socket.address1.port());
+
+// 	//finally add it to our collection of sockets
 // 	socket_map_[address] = new_socket;
+
 // 	return true;
 // }
+
+
+bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast){
+
+	//Socket new_socket;
+	new_socket.address1=address;
+	// if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
+	// 	printf("socket creation failed\n");
+	// 	//exit(-1);
+	// }
+
+	new_socket.to_addr.sin_family = AF_AQUANET;
+	new_socket.to_addr.sin_addr.s_addr = 1;
+	new_socket.to_addr.sin_addr.d_addr = 2;
+	socket_map_[address] = new_socket;
+	return true;
+}
 
 
 int Share::Run(int argc,char * argv[])
@@ -1409,10 +1438,10 @@ int Share::Run(int argc,char * argv[])
 // 	try
 // 	{
 // 		//set up socket....
-// 		int socket_fd;
-// 		socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-// 		if(socket_fd<0)
-// 			throw std::runtime_error("Listener::ListenLoop()::socket()");
+// 		// int socket_fd;
+// 		// socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+// 		// if(socket_fd<0)
+// 		// 	throw std::runtime_error("Listener::ListenLoop()::socket()");
 
 
 // 		//we want to be able to resuse it (multiple folk are interested)
@@ -1460,7 +1489,7 @@ int Share::Run(int argc,char * argv[])
 // */
 // 		dg_addr.sin_port = htons(address_.port());
 
-// 		if (bind(socket_fd, (struct sockaddr*) &dg_addr, sizeof(dg_addr)) == -1)
+// 		if (bind(new_socket.socket_fd, (struct sockaddr*) &dg_addr, sizeof(dg_addr)) == -1)
 // 			throw std::runtime_error("Listener::ListenLoop()::bind");
 
 // /*
@@ -1490,19 +1519,19 @@ int Share::Run(int argc,char * argv[])
 // 			// 		incoming_buffer.size());
 // 			socklen_t len;
 // 			len = sizeof(dg_addr);
-// 			int num_bytes_read = recvfrom (socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr*) &dg_addr, &len);
+// 			int num_bytes_read = recvfrom (new_socket.socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr*) &dg_addr, &len);
 // 			if(num_bytes_read>0)
 // 			{
-// 			/*	
-// 				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-// 				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-// 				std::cout<<ss<<std::endl;
-// 			*/	
+				
+// 				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+// 				// std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+// 				// std::cout<<ss<<std::endl;
+				
 // 				//deserialise
 // 				CMOOSMsg msg;
-// 				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-// 				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-// 				std::cout<<ss<<std::endl;
+// 				//std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+// 				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+// 				//std::cout<<ss<<std::endl;
 // 				msg.Serialize(incoming_buffer.data(), incoming_buffer.size(), false);
 
 
@@ -1552,11 +1581,11 @@ bool Listener::ListenLoop()
 	try
 	{
 		//set up socket....
-		int m_socket_fd;
-		if ((m_socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0) {
- 			printf("failed to create a socket");
- 			exit(-1);
- 		}
+		// int m_socket_fd;
+		// if ((m_socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0) {
+ 		// 	printf("failed to create a socket");
+ 		// 	exit(-1);
+ 		// }
 		struct sockaddr_aquanet remote_addr;
 		int addr_size = sizeof (remote_addr);
 
@@ -1566,14 +1595,13 @@ bool Listener::ListenLoop()
 		while(!thread_.IsQuitRequested())
 		{
 			//read socket blocking
-			int num_bytes_read = aqua_recvfrom(m_socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr *) & remote_addr, &addr_size);
+			int num_bytes_read = aqua_recvfrom(new_socket.socket_fd , incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr *) & remote_addr, &addr_size);
 			if(num_bytes_read>0)
 			{
 				
-				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-				std::cout<<ss<<std::endl;
-				
+				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+				// std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+				// std::cout<<ss<<std::endl;
 				//deserialise
 				CMOOSMsg msg;
 				msg.Serialize(incoming_buffer.data(), incoming_buffer.size(), false);
@@ -1603,3 +1631,30 @@ bool Listener::ListenLoop()
 
 }//end of MOOS namespace..
 
+
+// UDP Main
+// int main(int argc, char *argv[])
+// {
+// 	MOOS::Share TheShare;
+
+// 	//Single socket: UDP
+// 	if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+// 	throw std::runtime_error(
+// 			"AddSocketForOutgoingTraffic() failed to open sender socket");
+
+// 	TheShare.Run(argc,argv);
+// }
+
+// Aqua-Net Main
+int main(int argc, char *argv[])
+{
+	MOOS::Share TheShare;
+
+	//Single socket: AquaSocket
+	if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
+		printf("socket creation failed\n");
+		//exit(-1);
+	}
+
+	TheShare.Run(argc,argv);
+}
