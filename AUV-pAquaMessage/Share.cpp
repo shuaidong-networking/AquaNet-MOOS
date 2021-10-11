@@ -58,6 +58,9 @@
 char log_file[BUFSIZE]; 
 char* log_file_name = log_file;
 
+//main
+#include "Share.h"
+
 #define DEFAULT_MULTICAST_GROUP_ADDRESS "224.1.1.11"
 #define DEFAULT_MULTICAST_GROUP_PORT 24460
 #define MAX_MULTICAST_CHANNELS 256
@@ -68,15 +71,26 @@ char* log_file_name = log_file;
 #define YELLOW MOOS::ConsoleColours::Yellow()
 #define NORMAL MOOS::ConsoleColours::reset()
 
-namespace MOOS {
 
 
 struct Socket {
-	MOOS::IPV4Address address;
+	MOOS::IPV4Address address1;
 	int socket_fd;
 	struct sockaddr_in sock_addr;
 	struct sockaddr_aquanet to_addr;
 };
+
+Socket new_socket;
+//UDP
+// MOOS::IPV4Address address;
+// int socket_fd;
+// struct sockaddr_in sock_addr;
+
+
+
+namespace MOOS {
+
+
 
 class Share::Impl: public CMOOSApp {
 public:
@@ -167,7 +181,7 @@ const std::string trim(const std::string& pString,
         // no content
         return "";
     }
-
+	
     const size_t endStr = pString.find_last_not_of(pWhitespace);
     const size_t range = endStr - beginStr + 1;
 
@@ -291,7 +305,6 @@ bool Share::Impl::OnStartUp()
 
 	SetIterateMode(REGULAR_ITERATE_AND_COMMS_DRIVEN_MAIL);
 	SetAppFreq(40,0);
-
 	try
 	{
 /*
@@ -364,7 +377,7 @@ bool Share::Impl::OnStartUp()
 bool Share::Impl::ProcessShortHandIOConfigurationString(std::string configuration_string, bool is_output)
 {
 
-//	std::cout<<"ProcessShortHandIOConfigurationString...\n";
+	std::cout<<"ProcessShortHandIOConfigurationString...\n";
 
 
 	std::string copy_config = configuration_string;
@@ -510,7 +523,7 @@ bool Share::Impl::ProcessShortHandIOConfigurationString(std::string configuratio
 
 bool Share::Impl::ProcessIOConfigurationString(std::string  configuration_string, bool is_output )
 {
-//	std::cout<<"ProcessShortHandIOConfigurationString...\n";
+	std::cout<<"ProcessLongHandIOConfigurationString...\n";
 
 
 	std::string src_name, dest_name, routes;
@@ -1079,6 +1092,7 @@ bool WildcardMatch(const std::string & var_pattern,
 // }
 
 
+
 // bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
 // {
 // 	//std::cout << "starting print the ApplyRoute" << std::endl;
@@ -1106,7 +1120,7 @@ bool WildcardMatch(const std::string & var_pattern,
 // 			std::stringstream ss;
 // 			ss << "no output socket for "
 // 					<< route.dest_address.to_string() << std::endl;
-// 			PrintSocketMap();
+// 			//PrintSocketMap();
 // 			throw std::runtime_error(ss.str());
 // 		}
 		
@@ -1144,9 +1158,9 @@ bool WildcardMatch(const std::string & var_pattern,
 // 		/*
 // 			convert the passing data from vector buffer to string
 // 		*/
-
+// 		std::cout << "Starting sendto()" << std::endl;
 // 		std::string ss(buffer.begin(), buffer.end());
-// 		//std::cout << ss << std::endl;
+// 		std::cout << ss << std::endl;
 
 // 		//send here
 // 		// if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
@@ -1155,12 +1169,13 @@ bool WildcardMatch(const std::string & var_pattern,
 // 		// {
 // 		// 	throw std::runtime_error("failed \"sendto\"");
 // 		// }
-// 		if (sendto(relevant_socket.socket_fd, ss.data(), ss.size(), 0,
+// 		if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
 // 				(struct sockaddr*) (&relevant_socket.sock_addr),
 // 				sizeof(relevant_socket.sock_addr)) < 0)
 // 		{
 // 			throw std::runtime_error("failed \"sendto\"");
 // 		}
+
 		
 // 		route.last_time_sent = now;
 // 	}
@@ -1169,12 +1184,11 @@ bool WildcardMatch(const std::string & var_pattern,
 
 // }
 
-
-bool Share::Impl::ApplyRoutes(CMOOSMsg & msg){
-	
+bool Share::Impl::ApplyRoutes(CMOOSMsg & msg)
+{
+	//std::cout << "starting print the ApplyRoute" << std::endl;
 	//do we know how to route this? double check
 	RouteMap::iterator g = routing_table_.find(msg.GetKey());
-	PrintSocketMap();
 	if(g == routing_table_.end())
 		throw std::runtime_error("no specified route");
 
@@ -1200,7 +1214,8 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg){
 			PrintSocketMap();
 			throw std::runtime_error(ss.str());
 		}
-
+		
+		//PrintSocketMap();
 		Socket & relevant_socket = mcg->second;
 
 
@@ -1226,28 +1241,42 @@ bool Share::Impl::ApplyRoutes(CMOOSMsg & msg){
 		}
 
 		std::vector<unsigned char> buffer(msg_buffer_size);
+	
 		if (!msg.Serialize(buffer.data(), msg_buffer_size))
 		{
 			throw std::runtime_error("failed msg serialisation");
 		}
 
-		//send here internet internet socket String
-		
-		// sleep
-		
+		/*
+			convert the passing data from vector buffer to string
+		*/
+
+		// std::string ss(buffer.begin(), buffer.end());
+		// std::cout << ss << std::endl;
+
+		//send here
+		// if (sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0,
+		// 		(struct sockaddr*) (&relevant_socket.sock_addr),
+		// 		sizeof(relevant_socket.sock_addr)) < 0)
+		// {
+		// 	throw std::runtime_error("failed \"sendto\"");
+		// }
+		std::cout << "sendto()" << std::endl;
 		if (aqua_sendto(relevant_socket.socket_fd, buffer.data(), buffer.size(), 0, (struct sockaddr *) & relevant_socket.to_addr, sizeof (relevant_socket.to_addr)) < 0) {
 
 			printf("failed to send to the socket");
 		}
-		//sleep(100);
-		std::string ss(buffer.begin(), buffer.end());
-		std::cout << "sendto()" << std::endl;
-		std::cout << "the size of the data is: " << ss.size() << std::endl;
+		//sleep(1);
+		// std::cout << buffer.size() << std::endl;
 		route.last_time_sent = now;
 	}
-	
+
 	return true;
+
 }
+
+
+
 
 
 MOOS::IPV4Address Share::Impl::GetAddressFromChannelAlias(unsigned int channel_number) const
@@ -1274,13 +1303,13 @@ std::string Share::Impl::GetChannelAliasFromMutlicastAddress(const MOOS::IPV4Add
 // bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast)
 // {
 
-// 	Socket new_socket;
-// 	new_socket.address=address;
+// 	//Socket new_socket;
+// 	new_socket.address1=address;
 
 // 	// create a internet socket
-// 	if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-// 	throw std::runtime_error(
-// 			"AddSocketForOutgoingTraffic() failed to open sender socket");
+// 	// if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+// 	// throw std::runtime_error(
+// 	// 		"AddSocketForOutgoingTraffic() failed to open sender socket");
 
 // /*
 // 	int reuse = 1;
@@ -1324,7 +1353,7 @@ std::string Share::Impl::GetChannelAliasFromMutlicastAddress(const MOOS::IPV4Add
 // 	memset(&new_socket.sock_addr, 0, sizeof (new_socket.sock_addr));
 // 	new_socket.sock_addr.sin_family = AF_INET;
 
-// 	std::string dotted_ip = MOOS::IPV4Address::GetNumericAddress(new_socket.address.host());
+// 	std::string dotted_ip = MOOS::IPV4Address::GetNumericAddress(new_socket.address1.host());
 // 	std::cout << "sent to dotted_op is :" << dotted_ip << std::endl;
 // 	if(inet_aton(dotted_ip.c_str(), &new_socket.sock_addr.sin_addr)==0)
 // 	{
@@ -1333,7 +1362,7 @@ std::string Share::Impl::GetChannelAliasFromMutlicastAddress(const MOOS::IPV4Add
 // 	}
 
 // 	//new_socket.sock_addr.sin_addr.s_addr = inet_addr(new_socket.address.ip_num.c_str());
-// 	new_socket.sock_addr.sin_port = htons(new_socket.address.port());
+// 	new_socket.sock_addr.sin_port = htons(new_socket.address1.port());
 
 // 	//finally add it to our collection of sockets
 // 	socket_map_[address] = new_socket;
@@ -1344,12 +1373,12 @@ std::string Share::Impl::GetChannelAliasFromMutlicastAddress(const MOOS::IPV4Add
 
 bool Share::Impl::AddOutputRoute(MOOS::IPV4Address address, bool multicast){
 
-	Socket new_socket;
-	new_socket.address=address;
-	if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
-		printf("socket creation failed\n");
-		//exit(-1);
-	}
+	//Socket new_socket;
+	new_socket.address1=address;
+	// if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
+	// 	printf("socket creation failed\n");
+	// 	//exit(-1);
+	// }
 
 	new_socket.to_addr.sin_family = AF_AQUANET;
 	new_socket.to_addr.sin_addr.s_addr = 1;
@@ -1387,149 +1416,6 @@ int Share::Run(int argc,char * argv[])
 	Author: Shuai Dong
 */
 
-Listener::Listener(SafeList<CMOOSMsg> & queue,
-		const MOOS::IPV4Address & address,
-		bool multicast):queue_(queue), address_(address),multicast_(multicast) {
-	// TODO Auto-generated constructor stub
-
-}
-
-Listener::~Listener() {
-	// TODO Auto-generated destructor stub
-}
-
-
-bool Listener::Run()
-{
-	thread_.Initialise(dispatch, this);
-	return thread_.Start();
-}
-bool Listener::ListenLoop()
-{
-	try
-	{
-		//set up socket....
-		int socket_fd;
-		socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-		if(socket_fd<0)
-			throw std::runtime_error("Listener::ListenLoop()::socket()");
-
-
-		//we want to be able to resuse it (multiple folk are interested)
-
-		// int reuse = 1;
-		// if (setsockopt(socket_fd, SOL_SOCKET,SO_REUSEADDR/* SO_REUSEPORT*/, &reuse, sizeof(reuse)) == -1)
-		// 	throw std::runtime_error("Listener::ListenLoop::setsockopt::reuse");
-
-
-/*		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT,
-			&reuse, sizeof(reuse)) == -1)
-		throw std::runtime_error("Listener::ListenLoop()::failed to set resuse port option");
-*/
-
-
-		//give ourselves plenty of receive space
-		//set aside some space for receiving - just a few multiples of 64K
-
-/*
-		// Annotate this setsockopt command
-
-		int rx_buffer_size = 64*1024*28;
-		if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVBUF, &rx_buffer_size, sizeof(rx_buffer_size)) == -1)
-			throw std::runtime_error("Listener::ListenLoop()::setsockopt::rcvbuf");
-*/
-
-		/* construct a datagram address structure */
-		struct sockaddr_in dg_addr;
-		memset(&dg_addr, 0, sizeof(dg_addr));
-		dg_addr.sin_family = AF_INET;
-
-
-		// Annotate this multicast 
-/*
-		if(multicast_)
-		{
-			
-			dg_addr.sin_addr.s_addr = inet_addr(address_.host().c_str());
-		}
-		else
-		{
-			
-			dg_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-		}
-*/
-		dg_addr.sin_port = htons(address_.port());
-
-		if (bind(socket_fd, (struct sockaddr*) &dg_addr, sizeof(dg_addr)) == -1)
-			throw std::runtime_error("Listener::ListenLoop()::bind");
-
-/*
-		if(multicast_)
-		{
-			std::cout << "it is multicast" << std::endl;
-			//join the multicast group
-			struct ip_mreq mreq;
-			mreq.imr_multiaddr.s_addr = inet_addr(address_.host().c_str());
-			mreq.imr_interface.s_addr = INADDR_ANY;
-			if(setsockopt(socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))==-1)
-				throw std::runtime_error("Listener::ListenLoop()::setsockopt::ADD_MEMBERSHIP");
-		}
-		else{
-			std::cout << "still not multicast " << std::endl;
-		}
-*/
-
-		//make a receive buffer
-		std::vector<unsigned char > incoming_buffer(2*64*1024);
-
-		while(!thread_.IsQuitRequested())
-		{
-			//read socket blocking
-			// int num_bytes_read = read(socket_fd,
-			// 		incoming_buffer.data(),
-			// 		incoming_buffer.size());
-			socklen_t len;
-			len = sizeof(dg_addr);
-			int num_bytes_read = recvfrom (socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr*) &dg_addr, &len);
-			if(num_bytes_read>0)
-			{
-			/*	
-				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-				std::cout<<ss<<std::endl;
-			*/	
-				//deserialise
-				CMOOSMsg msg;
-				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-				std::cout<<ss<<std::endl;
-				msg.Serialize(incoming_buffer.data(), incoming_buffer.size(), false);
-
-
-				//push onto queue
-				queue_.Push(msg);
-			}
-
-		}
-	}
-	catch(const std::exception & e)
-	{
-		std::cerr<<MOOS::ConsoleColours::Red();
-		std::cerr<<"Caught exception in a listening thread:\n";
-		std::cerr<<"    "<<e.what()<<std::endl;
-		std::cerr<<"    "<<std::strerror(errno)<<std::endl;
-		std::cerr<<"    input route abandoned ("<<address_.to_string()<<")"<<std::endl;
-		std::cerr<<MOOS::ConsoleColours::reset();
-
-		exit(-1);
-
-		return false;
-	}
-
-	return true;
-
-}
-
 // Listener::Listener(SafeList<CMOOSMsg> & queue,
 // 		const MOOS::IPV4Address & address,
 // 		bool multicast):queue_(queue), address_(address),multicast_(multicast) {
@@ -1552,13 +1438,75 @@ bool Listener::ListenLoop()
 // 	try
 // 	{
 // 		//set up socket....
-// 		int m_socket_fd;
-// 		if ((m_socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0) {
-//  			printf("failed to create a socket");
-//  			exit(-1);
-//  		}
-// 		struct sockaddr_aquanet remote_addr;
-// 		int addr_size = sizeof (remote_addr);
+// 		// int socket_fd;
+// 		// socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+// 		// if(socket_fd<0)
+// 		// 	throw std::runtime_error("Listener::ListenLoop()::socket()");
+
+
+// 		//we want to be able to resuse it (multiple folk are interested)
+
+// 		// int reuse = 1;
+// 		// if (setsockopt(socket_fd, SOL_SOCKET,SO_REUSEADDR/* SO_REUSEPORT*/, &reuse, sizeof(reuse)) == -1)
+// 		// 	throw std::runtime_error("Listener::ListenLoop::setsockopt::reuse");
+
+
+// /*		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT,
+// 			&reuse, sizeof(reuse)) == -1)
+// 		throw std::runtime_error("Listener::ListenLoop()::failed to set resuse port option");
+// */
+
+
+// 		//give ourselves plenty of receive space
+// 		//set aside some space for receiving - just a few multiples of 64K
+
+// /*
+// 		// Annotate this setsockopt command
+
+// 		int rx_buffer_size = 64*1024*28;
+// 		if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVBUF, &rx_buffer_size, sizeof(rx_buffer_size)) == -1)
+// 			throw std::runtime_error("Listener::ListenLoop()::setsockopt::rcvbuf");
+// */
+
+// 		/* construct a datagram address structure */
+// 		struct sockaddr_in dg_addr;
+// 		memset(&dg_addr, 0, sizeof(dg_addr));
+// 		dg_addr.sin_family = AF_INET;
+
+
+// 		// Annotate this multicast 
+// /*
+// 		if(multicast_)
+// 		{
+			
+// 			dg_addr.sin_addr.s_addr = inet_addr(address_.host().c_str());
+// 		}
+// 		else
+// 		{
+			
+// 			dg_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+// 		}
+// */
+// 		dg_addr.sin_port = htons(address_.port());
+
+// 		if (bind(new_socket.socket_fd, (struct sockaddr*) &dg_addr, sizeof(dg_addr)) == -1)
+// 			throw std::runtime_error("Listener::ListenLoop()::bind");
+
+// /*
+// 		if(multicast_)
+// 		{
+// 			std::cout << "it is multicast" << std::endl;
+// 			//join the multicast group
+// 			struct ip_mreq mreq;
+// 			mreq.imr_multiaddr.s_addr = inet_addr(address_.host().c_str());
+// 			mreq.imr_interface.s_addr = INADDR_ANY;
+// 			if(setsockopt(socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))==-1)
+// 				throw std::runtime_error("Listener::ListenLoop()::setsockopt::ADD_MEMBERSHIP");
+// 		}
+// 		else{
+// 			std::cout << "still not multicast " << std::endl;
+// 		}
+// */
 
 // 		//make a receive buffer
 // 		std::vector<unsigned char > incoming_buffer(2*64*1024);
@@ -1566,17 +1514,27 @@ bool Listener::ListenLoop()
 // 		while(!thread_.IsQuitRequested())
 // 		{
 // 			//read socket blocking
-// 			int num_bytes_read = aqua_recvfrom(m_socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr *) & remote_addr, &addr_size);
+// 			// int num_bytes_read = read(socket_fd,
+// 			// 		incoming_buffer.data(),
+// 			// 		incoming_buffer.size());
+// 			socklen_t len;
+// 			len = sizeof(dg_addr);
+// 			int num_bytes_read = recvfrom (new_socket.socket_fd, incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr*) &dg_addr, &len);
 // 			if(num_bytes_read>0)
 // 			{
 				
-// 				std::cout << "offshore is starting read the socket from AUV" << std::endl;
-// 				std::string ss(incoming_buffer.begin(), incoming_buffer.end());
-// 				std::cout<<ss<<std::endl;
+// 				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+// 				// std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+// 				// std::cout<<ss<<std::endl;
 				
 // 				//deserialise
 // 				CMOOSMsg msg;
+// 				//std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+// 				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+// 				//std::cout<<ss<<std::endl;
 // 				msg.Serialize(incoming_buffer.data(), incoming_buffer.size(), false);
+
+
 // 				//push onto queue
 // 				queue_.Push(msg);
 // 			}
@@ -1601,5 +1559,102 @@ bool Listener::ListenLoop()
 
 // }
 
+Listener::Listener(SafeList<CMOOSMsg> & queue,
+		const MOOS::IPV4Address & address,
+		bool multicast):queue_(queue), address_(address),multicast_(multicast) {
+	// TODO Auto-generated constructor stub
+
+}
+
+Listener::~Listener() {
+	// TODO Auto-generated destructor stub
+}
+
+
+bool Listener::Run()
+{
+	thread_.Initialise(dispatch, this);
+	return thread_.Start();
+}
+bool Listener::ListenLoop()
+{
+	try
+	{
+		//set up socket....
+		// int m_socket_fd;
+		// if ((m_socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0) {
+ 		// 	printf("failed to create a socket");
+ 		// 	exit(-1);
+ 		// }
+		struct sockaddr_aquanet remote_addr;
+		int addr_size = sizeof (remote_addr);
+
+		//make a receive buffer
+		std::vector<unsigned char > incoming_buffer(2*64*1024);
+
+		while(!thread_.IsQuitRequested())
+		{
+			//read socket blocking
+			int num_bytes_read = aqua_recvfrom(new_socket.socket_fd , incoming_buffer.data(), incoming_buffer.size(), 0, (struct sockaddr *) & remote_addr, &addr_size);
+			if(num_bytes_read>0)
+			{
+				
+				//std::cout << "offshore is starting read the socket from AUV" << std::endl;
+				// std::string ss(incoming_buffer.begin(), incoming_buffer.end());
+				// std::cout<<ss<<std::endl;
+				//deserialise
+				CMOOSMsg msg;
+				msg.Serialize(incoming_buffer.data(), incoming_buffer.size(), false);
+				//push onto queue
+				queue_.Push(msg);
+			}
+
+		}
+	}
+	catch(const std::exception & e)
+	{
+		std::cerr<<MOOS::ConsoleColours::Red();
+		std::cerr<<"Caught exception in a listening thread:\n";
+		std::cerr<<"    "<<e.what()<<std::endl;
+		std::cerr<<"    "<<std::strerror(errno)<<std::endl;
+		std::cerr<<"    input route abandoned ("<<address_.to_string()<<")"<<std::endl;
+		std::cerr<<MOOS::ConsoleColours::reset();
+
+		exit(-1);
+
+		return false;
+	}
+
+	return true;
+
+}
+
 }//end of MOOS namespace..
 
+
+// UDP Main
+// int main(int argc, char *argv[])
+// {
+// 	MOOS::Share TheShare;
+
+// 	//Single socket: UDP
+// 	if ((new_socket.socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+// 	throw std::runtime_error(
+// 			"AddSocketForOutgoingTraffic() failed to open sender socket");
+
+// 	TheShare.Run(argc,argv);
+// }
+
+// Aqua-Net Main
+int main(int argc, char *argv[])
+{
+	MOOS::Share TheShare;
+
+	//Single socket: AquaSocket
+	if ((new_socket.socket_fd = aqua_socket(AF_AQUANET, SOCK_AQUANET, 0)) < 0){
+		printf("socket creation failed\n");
+		//exit(-1);
+	}
+
+	TheShare.Run(argc,argv);
+}
