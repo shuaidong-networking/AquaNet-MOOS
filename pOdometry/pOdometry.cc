@@ -8,7 +8,7 @@
 #include <iterator>
 #include "MBUtils.h"
 #include "ACTable.h"
-#include "OdometrySubscriber.h"
+#include "Odometry.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -116,9 +116,9 @@ bool Odometry::Iterate()
 bool Odometry::OnStartUp()
 {
   AppCastingMOOSApp::OnStartUp();
-  std::cout << "----Shuai OnStarUp()-----" << std::endl;
-  receiveServerMessage();
-  std::cout << "----Shuai  Done()----" << std::endl;
+  //std::cout << "----Shuai OnStarUp()-----" << std::endl;
+  //receiveServerMessage();
+  //std::cout << "----Shuai  Done()----" << std::endl;
   
   
   STRING_LIST sParams;
